@@ -129,15 +129,15 @@ local function get_row(curr_id, curr)
 
     -- TODO: make this a table?
     if cap_pct > 1.0 then
-      cap_col = 'FF0000'
+      cap_col = '00FF00'
     elseif cap_pct > 0.75 then
-      cap_col = 'FFA500'
+      cap_col = 'A5FF00'
     elseif cap_pct > 0.5 then
       cap_col = 'FFFF00'
     elseif cap_pct > 0.25 then
-      cap_col = 'A5FF00'
+      cap_col = 'FFA500'
     else
-      cap_col = '00FF00'
+      cap_col = 'FF0000'
     end
 
     -- build cap string
