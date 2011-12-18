@@ -11,6 +11,38 @@ local CURRENCY_IDS = {
   390,  -- Conquest Points
 }
 
+-- FIXME: make configurable
+local CURRENCY_LAYOUT = 'vertical'
+
+-- layout for each character
+local CURRENCY_LAYOUTS = {
+  horizontal = {
+    init = {
+      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
+      'CENTER',
+      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT'
+    },
+
+    grid = {
+      {395, 392},
+      {396, 390},
+    }
+  },
+
+  vertical = {
+    init = {
+      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
+    },
+
+    grid = {
+      {395},
+      {396},
+      {392},
+      {390},
+    }
+  },
+}
+
 local function db_init(guid)
   -- lazily initialize database
   if db == nil then
@@ -49,7 +81,7 @@ local function update()
   db_init(guid)
 
   -- print guid (debug)
-  chat_log('guid = ' .. guid)
+  -- chat_log('guid = ' .. guid)
 
   -- walk over list of currencies
   for _, curr_id in pairs(CURRENCY_IDS) do
@@ -61,7 +93,7 @@ local function update()
 
     if name then
       -- print currency name
-      chat_log(string.format("name = %s, icon = %s", name, icon))
+      -- chat_log(string.format("name = %s, icon = %s", name, icon))
 
       -- if the character has ever discovered this currency,
       -- then save the info
@@ -90,8 +122,9 @@ local function get_char_name(char)
   local col_str = 'ffffff'
 
   -- disable this for now
-  if false and char.class then
+  if char.class then
     local c = RAID_CLASS_COLORS[char.class]
+
     if c then
       col_str = string.format('%02x%02x%02x', 
         floor(255 * c.r),
@@ -99,8 +132,10 @@ local function get_char_name(char)
         floor(255 * c.b)
       )
     end
-  end
 
+    -- print color to debug log
+    chat_log(string.format('class = %s, col_str = %s', char.class, col_str))
+  end
 
   -- TODO: add support for CLASS_ICON_TCOORDS
   return string.format('|cff%s%s|r', col_str, char.name)
@@ -148,10 +183,12 @@ local function get_row(curr_id, curr)
   end
 
   -- build/return formatted row
-  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s|r", icon, name),
-         curr.amount,
-         string.format("%s", cap_str),
-         cap_pct
+  return {
+    string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s|r", icon, name),
+    curr.amount,
+    string.format("%s", cap_str),
+    cap_pct
+  }
 end
 
 local bac = LDB:NewDataObject(ADDON_NAME, {
@@ -166,11 +203,11 @@ function bac.OnClick()
 end
 
 function bac.OnEnter(self)
+  local layout = CURRENCY_LAYOUTS[CURRENCY_LAYOUT]
+  local cols = layout.init
+
   -- create tooltip
-  tooltip = LibQTip:Acquire(
-    ADDON_NAME .. 'Tooltip', 4, 
-    'LEFT', 'RIGHT', 'RIGHT', 'RIGHT'
-  )
+  tooltip = LibQTip:Acquire(ADDON_NAME .. 'Tooltip', #cols, unpack(cols))
 
   -- add header
   tooltip:AddHeader(ADDON_NAME)
@@ -181,10 +218,43 @@ function bac.OnEnter(self)
     -- add character name
     tooltip:AddLine(get_char_name(char))
 
-    -- iterate over currencies
     if char.currencies then
-      for curr_id, curr in pairs(char.currencies) do
-        tooltip:AddLine(get_row(curr_id, curr))
+      -- iterate over currency layout
+      for _, row_curr_ids in pairs(layout.grid) do
+        local row = {};
+
+        -- chat_log('adding row')
+        -- chat_log('#row_curr_ids = ' .. #row_curr_ids)
+
+        for _, curr_id in pairs(row_curr_ids) do
+          local curr = char.currencies[curr_id]
+
+          -- chat_log('curr_id = ' .. curr_id)
+
+          if curr then
+            -- add row
+            -- chat_log('add row')
+            for _, val in pairs(get_row(curr_id, curr)) do
+              table.insert(row, val)
+            end
+          else
+            -- add empty set
+            -- chat_log('empty set')
+            for i = 1, 4 do
+              table.insert(row, ' ')
+            end
+          end
+
+          -- add empty cell for padding
+          table.insert(row, ' ')
+        end
+
+        -- remove trailing padding
+        row[#row] = nil
+
+        -- chat_log('adding combined row ')
+        -- add combined row
+        tooltip:AddLine(unpack(row))
       end
     end
 
