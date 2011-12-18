@@ -12,24 +12,13 @@ local CURRENCY_IDS = {
 }
 
 -- FIXME: make configurable
-local CURRENCY_LAYOUT = 'v_all'
+local CURRENCY_VIEW = 'v_all'
 
 -- layout for each character
-local CURRENCY_LAYOUTS = {
-  h_all = {
-    init = {
-      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
-      'CENTER',
-      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT'
-    },
+local CURRENCY_VIEWS = {
+  ["all"] = {
+    desc = "PVE and PVP points, grouped vertically (default)",
 
-    grid = {
-      {395, 392},
-      {396, 390},
-    }
-  },
-
-  v_all = {
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
     },
@@ -42,7 +31,24 @@ local CURRENCY_LAYOUTS = {
     }
   },
 
-  h_pve = {
+  ["all-h"] = {
+    desc = "PVE and PVP points, grouped horizontally",
+
+    init = {
+      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
+      'CENTER',
+      'LEFT', 'RIGHT', 'RIGHT', 'RIGHT'
+    },
+
+    grid = {
+      {395, 392},
+      {396, 390},
+    }
+  },
+
+  ["pve-h"] = {
+    desc = "PVE points, grouped horizontally",
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
       'CENTER',
@@ -54,7 +60,9 @@ local CURRENCY_LAYOUTS = {
     }
   },
 
-  v_pve = {
+  ["pve"] = {
+    desc = "PVE points, grouped vertically",
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
     },
@@ -65,7 +73,9 @@ local CURRENCY_LAYOUTS = {
     }
   },
 
-  h_pvp = {
+  ["pvp-h"] = {
+    desc = "PVP points, grouped horizontally",
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
       'CENTER',
@@ -77,7 +87,9 @@ local CURRENCY_LAYOUTS = {
     }
   },
 
-  v_pvp = {
+  ["pvp"] = {
+    desc = "PVP points, grouped vertically",
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
     },
@@ -103,8 +115,48 @@ local CLASS_ICONS = {
   WARRIOR     = "Interface/Icons/INV_Sword_27",
 }
 
+local function config_init(force)
+  if force or not cappy_config then
+    cappy_config = {
+      view = 'v_all'
+    }
+  end
+end
+
+local function config_set(k, v) 
+  config_init()
+  cappy_config[k] = v
+  return v
+end
+
+local function config_get(k) 
+  config_init()
+  return cappy_config[k]
+end
+
+SLASH_CAPPY1 = '/cappy'
+SlashCmdList.CAPPY = function(arg, _)
+  if not arg or string.match(arg, '^%s*$') or string.match(arg, 'help') then
+    chat_log("TODO: print usage")
+  elseif string.match(arg, '^view list|views|list') then
+    chat_log("TODO: list views")
+  elseif arg == 'reset' then
+    config_init(true)
+    chat_log("configuration reset to default")
+  elseif md = string.match(arg, '^view (%w+)$') then
+    if CURRENCY_VIEWS[md[1]] then
+      config_set('view', md[1])
+      chat_log('view set to ' .. md[1])
+    else
+      chat_log('unknown view: ' .. md[1])
+    end
+  else
+    chat_log("Unknown command")
+  end
+end
+
 --
--- init/update methods
+-- db init/update methods
 --
 
 local function db_init(guid)
@@ -364,7 +416,7 @@ function bac.OnClick()
 end
 
 function bac.OnEnter(self)
-  local layout = CURRENCY_LAYOUTS[CURRENCY_LAYOUT]
+  local layout = CURRENCY_VIEWS[CURRENCY_VIEW]
   local cols = layout.init
   local curr_guid = UnitGUID('player')
 
