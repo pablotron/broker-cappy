@@ -7,9 +7,9 @@
 ## X-eMail: broker-cappy@pablotron.org
 ## SavedVariables: db, cappy_config
 
-LibStub.lua
-CallbackHandler-1.0.lua
-LibDataBroker-1.1.lua
-LibQTip-1.0.lua
+libs/LibStub.lua
+libs/CallbackHandler-1.0.lua
+libs/LibDataBroker-1.1.lua
+libs/LibQTip-1.0.lua
 
 Broker_Cappy.lua
