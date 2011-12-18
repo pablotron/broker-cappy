@@ -1,6 +1,6 @@
 ## Interface: 40300
 ## Title: Broker_Cappy
-## Notes: Track justice, valor, honor, and conquest points across multiple characters.
+## Notes: Track justice, valor, honor, and conquest points across characters.
 ## Version: 0.1
 ## Dependencies: 
 ## Author: Paul Duncan
