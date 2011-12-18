@@ -1,15 +1,15 @@
 ## Interface: 40300
-## Title: Broker_AltPoints
-## Notes: "Track justice, valor, honor, and conquest points across multiple characters."
+## Title: Broker_Cappy
+## Notes: Track justice, valor, honor, and conquest points across multiple characters.
 ## Version: 0.1
 ## Dependencies: 
 ## Author: Paul Duncan
-## X-eMail: brokeraltpoints@pablotron.org
-## SavedVariables: db
+## X-eMail: broker-cappy@pablotron.org
+## SavedVariables: db, cappy_config
 
 LibStub.lua
 CallbackHandler-1.0.lua
 LibDataBroker-1.1.lua
 LibQTip-1.0.lua
 
-Broker_AltPoints.lua
+Broker_Cappy.lua
