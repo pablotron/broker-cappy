@@ -43,6 +43,19 @@ local CURRENCY_LAYOUTS = {
   },
 }
 
+local CLASS_ICONS = {
+  DEATHKNIGHT = "Interface/Icons/Spell_Deathknight_ClassIcon",
+  DRUID       = "Interface/Icons/INV_Misc_MonsterClaw_04",
+  HUNTER      = "Interface/Icons/INV_Weapon_Bow_07",
+  MAGE        = "Interface/Icons/INV_Staff_13",
+  PALADIN     = "Interface/AddOns/addon/UI-CharacterCreate-Classes_Paladin",
+  PRIEST      = "Interface/Icons/INV_Staff_30",
+  ROGUE       = "Interface/AddOns/addon/UI-CharacterCreate-Classes_Rogue",
+  SHAMAN      = "Interface/Icons/Spell_Nature_BloodLust",
+  WARLOCK     = "Interface/Icons/Spell_Nature_FaerieFire",
+  WARRIOR     = "Interface/Icons/INV_Sword_27",
+}
+
 local function db_init(guid)
   -- lazily initialize database
   if db == nil then
@@ -118,11 +131,20 @@ local function normalize_cap(curr_id, val)
   end
 end
 
-local function get_char_name(char) 
+local function get_char_header(guid, char) 
+  local icon_str = ''
   local col_str = 'ffffff'
 
-  -- disable this for now
   if char.class then
+    -- add icon for this character
+    -- (TODO: disabled for now because it's fugly)
+    local icon = CLASS_ICONS[char.class]
+    if false and icon then
+      icon_str = string.format('|T%s:0|t ', icon)
+    end
+
+    -- add class color for character
+    -- TODO: make this configurable?
     local c = RAID_CLASS_COLORS[char.class]
 
     if c then
@@ -134,11 +156,11 @@ local function get_char_name(char)
     end
 
     -- print color to debug log
-    chat_log(string.format('class = %s, col_str = %s', char.class, col_str))
+    -- chat_log(string.format('class = %s, col_str = %s', char.class, col_str))
   end
 
   -- TODO: add support for CLASS_ICON_TCOORDS
-  return string.format('|cff%s%s|r', col_str, char.name)
+  return string.format('%s|cff%s%s|r', icon_str, col_str, char.name)
 end
 
 local function get_row(curr_id, curr) 
@@ -216,7 +238,7 @@ function bac.OnEnter(self)
   -- walk over characters
   for guid, char in pairs(db) do
     -- add character name
-    tooltip:AddLine(get_char_name(char))
+    tooltip:AddLine(get_char_header(guid, char))
 
     if char.currencies then
       -- iterate over currency layout
