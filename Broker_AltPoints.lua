@@ -141,7 +141,7 @@ local function get_row(curr_id, curr)
     end
 
     -- build cap string
-    cap_str = string.format("|cFF%s%d/%d|r", cap_col, cap_val, cap_max)
+    cap_str = string.format("|cFFFFFF%d/%d|r", cap_val, cap_max)
 
     -- convert percent to decimal and round
     cap_pct = string.format('|cFF%s%d%%|r', cap_col, floor(100 * cap_pct + 0.5))
