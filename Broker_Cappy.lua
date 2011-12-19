@@ -9,6 +9,32 @@ local CURRENCY_IDS = {
   396,  -- Valor Points
   392,  -- Honor Points
   390,  -- Conquest Points
+
+  -- source: http://www.wowpedia.org/API_GetCurrencyInfo
+  61,   -- Dalaran Jewelcrafter's Token
+  81,   -- Dalaran Cooking Award
+  241,  -- Champion's Seal
+  361,  -- Illustrious Jewelcrafter's Token
+  -- 384,  -- Dwarf Archaeology Fragment
+  -- 385,  -- Troll Archaeology Fragment
+  391,  -- Tol Barad Commendation
+  -- 393, -- Fossil Archaeology Fragment
+  -- 394, -- Night Elf Archaeology Fragment
+  -- 397, -- Orc Archaeology Fragment
+  -- 398, -- Draenei Archaeology Fragment
+  -- 399, -- Vrykul Archaeology Fragment
+  -- 400, -- Nerubian Archaeology Fragment
+  -- 401, -- Tol'vir Archaeology Fragment
+  402, -- Chef's Award
+  416, -- Mark of the World Tree
+}
+
+-- list of currencies to exclude from "extra" currencies
+local STANDARD_CURRENCY_IDS = {
+  395,  -- Justice Points
+  396,  -- Valor Points
+  392,  -- Honor Points
+  390,  -- Conquest Points
 }
 
 -- layout for each character
@@ -320,6 +346,26 @@ local function update()
   end
 end
 
+local function make_broker_text()
+  local currs = {395, 392}
+  local r = ''
+
+  -- walk over visible currencies
+  for _, curr_id in ipairs(currs) do
+    local _, num, icon, _, _, _, discovered = GetCurrencyInfo(curr_id)
+
+    if not discovered then
+      num = 'n/a'
+    end
+
+    -- add to result
+    r = r .. string.format("\124TInterface/Icons/%s:0\124t %s ", icon, num)
+  end
+
+  -- return result
+  return r:gsub('%s*$', '')
+end
+
 --
 -- tooltip methods
 --
@@ -365,7 +411,7 @@ local function get_char_header(guid, char)
 end
 
 local function get_row(curr_id, curr) 
-  local cap_str, cap_pct = 'n/a', 'n/a'
+  local cap_str, cap_pct = '  ', ' '
   local name, amount, icon, earnedThisWeek, weeklyMax, totalMax, isDiscovered = GetCurrencyInfo(curr_id)
 
   -- check for weekly/total caps
@@ -475,18 +521,41 @@ function add_char_to_tooltip(tooltip, guid, char, layout)
   tooltip:AddLine(' ')
 end
 
-local bac = LDB:NewDataObject(ADDON_NAME, {
+function is_standard_currency(curr_id)
+  for _, std_curr_id in pairs(STANDARD_CURRENCY_IDS) do
+    if curr_id == std_curr_id then
+      return true
+    end
+  end
+
+  return false
+end
+    
+
+function add_char_extras_to_tooltip(tooltip, guid, char)
+  if char.currencies then
+    for _, curr_id in pairs(CURRENCY_IDS) do
+      local curr = char.currencies[curr_id]
+      if not is_standard_currency(curr_id) and curr then
+        tooltip:AddLine(unpack(get_row(curr_id, curr)))
+      end
+    end
+  end
+end
+
+-- create cappy data object
+local cdo = LDB:NewDataObject(ADDON_NAME, {
   type = "data source",
-  icon = "Interface/Icons/Inv_Misc_Armorkit_18",
+  -- icon = "Interface/Icons/Inv_Misc_Armorkit_18",
   text = ""
 })
 
-function bac.OnClick()
+function cdo.OnClick()
   -- show currency frame on click
   ToggleCharacter("TokenFrame")
 end
 
-function bac.OnEnter(self)
+function cdo.OnEnter(self)
   local layout = CURRENCY_VIEWS[config_get('view')]
   local cols = layout.init
   local curr_guid = UnitGUID('player')
@@ -518,13 +587,16 @@ function bac.OnEnter(self)
   -- add current character
   add_char_to_tooltip(tooltip, curr_guid, db[curr_guid], layout)
 
+  -- add extra currencies for current character to tooltip
+  add_char_extras_to_tooltip(tooltip, curr_guid, db[curr_guid])
+
   -- show tooltip
   tooltip:SmartAnchorTo(self)
   tooltip:SetAutoHideDelay(0.25, self)
   tooltip:Show()
 end
 
-function bac.OnLeave(self)
+function cdo.OnLeave(self)
   -- LibQTip:Release(tooltip)
   -- tooltip = nil
 end
@@ -552,4 +624,7 @@ frame:SetScript("OnEvent", function(self, ev, ...)
 
   -- update currency state
   update()
+
+  -- update data object text
+  cdo.text = make_broker_text()
 end);
