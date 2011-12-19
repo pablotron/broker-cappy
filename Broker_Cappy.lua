@@ -268,6 +268,8 @@ COMMANDS = {
 
     fn = function(val)
       config_init(true)
+      curr_filter_id = nil
+      -- TODO: reset icons
       print("Cappy configuration reset.")
     end
   },
@@ -285,6 +287,33 @@ COMMANDS = {
     end
   },
 
+  ["^filter%s*(.*)"] = {
+    name = "filter",
+    desc = "Filter currencies (not implemented).",
+
+    fn = function(val)
+      print("Not implemented yet")
+    end
+  },
+
+  ["^hide%s*(.*)"] = {
+    name = "hide",
+    desc = "Ignore character (not implemented).",
+
+    fn = function(val)
+      print("Not implemented yet")
+    end
+  },
+
+  ["^show%s*(.*)"] = {
+    name = "show",
+    desc = "Stop ignoring character (not implemented).",
+
+    fn = function(val)
+      print("Not implemented yet")
+    end
+  },
+
   ["^view%s+([%w-]+)"] = {
     name = "view <name>",
     desc = "Set a new view (use '/cappy list' to list available views).",
@@ -293,6 +322,11 @@ COMMANDS = {
       if CURRENCY_VIEWS[val] then
         config_set('view', val)
         print('View set to ' .. val)
+        
+        if tooltip then
+          -- FIXME
+          -- redraw_tooltip()
+        end
       else
         print('Unknown view: ' .. val)
       end
