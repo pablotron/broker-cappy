@@ -590,9 +590,12 @@ function cdo.OnEnter(self)
   -- add extra currencies for current character to tooltip
   add_char_extras_to_tooltip(tooltip, curr_guid, db[curr_guid])
 
-  -- show tooltip
+  -- anchor, init scrolling, and set autohide delay
   tooltip:SmartAnchorTo(self)
+  tooltip:UpdateScrolling()
   tooltip:SetAutoHideDelay(0.25, self)
+
+  -- show tooltip
   tooltip:Show()
 end
 
