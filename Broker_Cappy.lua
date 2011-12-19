@@ -212,6 +212,7 @@ COMMANDS = {
     desc = "Print list of commands.",
 
     fn = function(val) 
+      print("Available commands:")
       for _, v in sorted_by_name_or_key(COMMANDS) do
         print(string.format("  /cappy %s - %s", v.name, v.desc))
       end
@@ -237,6 +238,7 @@ COMMANDS = {
       for k, v in sorted_by_name_or_key(CURRENCY_VIEWS) do
         print(string.format("  %s - %s", v.name or k, v.desc))
       end
+      print("Use '/cappy view <name>' to set a different view")
     end
   },
 
@@ -556,7 +558,6 @@ end
 function add_tooltip_bbar(tooltip)
   tooltip:AddSeparator()
   tooltip:AddLine(' ')
-
 end
 
 -- create cappy data object
