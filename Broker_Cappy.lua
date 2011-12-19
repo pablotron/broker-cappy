@@ -46,6 +46,9 @@ local CURRENCY_VIEWS = {
     -- header text
     head = '',
 
+    -- summary icons
+    icons = {395, 392},
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
     },
@@ -64,6 +67,9 @@ local CURRENCY_VIEWS = {
 
     -- header text
     head = '',
+
+    -- summary icons
+    icons = {395, 392},
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -84,6 +90,9 @@ local CURRENCY_VIEWS = {
     -- header text
     head = ' (PVE)',
 
+    -- summary icons
+    icons = {395, 396},
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
       'CENTER',
@@ -102,6 +111,9 @@ local CURRENCY_VIEWS = {
     -- header text
     head = ' (PVE)',
 
+    -- summary icons
+    icons = {395, 396},
+
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
     },
@@ -118,6 +130,9 @@ local CURRENCY_VIEWS = {
 
     -- header text
     head = ' (PVP)',
+
+    -- summary icons
+    icons = {392, 390},
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -136,6 +151,9 @@ local CURRENCY_VIEWS = {
 
     -- header text
     head = ' (PVP)',
+
+    -- summary icons
+    icons = {392, 390},
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -376,7 +394,7 @@ local function update()
 end
 
 local function make_broker_text()
-  local currs = {395, 392}
+  local currs = CURRENCY_VIEWS[config_get('view')].icons
   local r = ''
 
   -- walk over visible currencies
@@ -507,12 +525,12 @@ end
 --
 
 function get_tooltip_header(filter_id)
-  local _, _, icon = GetCurrencyInfo(396)
+  local name, _, icon = GetCurrencyInfo(filter_id or 396)
   local view_text = CURRENCY_VIEWS[config_get('view')].head
 
   -- override view text
   if filter_id then
-    view_text = string.format(" (%s)", GetCurrencyInfo(filter_id))
+    view_text = string.format(" (%s)", name)
   end
 
   return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r",
@@ -523,7 +541,10 @@ function get_tooltip_header(filter_id)
 end
 
 function add_tooltip_header(tooltip, filter_id)
-  tooltip:AddLine(get_tooltip_header(filter_id))
+  local text = get_tooltip_header(filter_id)
+
+  tooltip:AddLine(' ')
+  tooltip:SetCell(tooltip:GetLineCount(), 1, text, nil, nil, 2)
 end
 
 function add_cell_link(tooltip, data)
@@ -706,6 +727,9 @@ function cdo.OnClick(self, btn, down)
         config_set('view', NEXT_VIEW[config_get('view')])
       end
     end
+
+    -- update button text to reflect view
+    cdo.text = make_broker_text()
 
     -- redraw tooltip
     cached_cdo_frame = self
