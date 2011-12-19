@@ -40,7 +40,11 @@ local STANDARD_CURRENCY_IDS = {
 -- layout for each character
 local CURRENCY_VIEWS = {
   ["all"] = {
+    -- help description
     desc = "PVE and PVP points, grouped vertically (default)",
+
+    -- header text
+    head = '',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -55,7 +59,11 @@ local CURRENCY_VIEWS = {
   },
 
   ["all-wide"] = {
+    -- help description
     desc = "PVE and PVP points, grouped horizontally",
+
+    -- header text
+    head = '',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -70,7 +78,11 @@ local CURRENCY_VIEWS = {
   },
 
   ["pve-wide"] = {
+    -- help description
     desc = "PVE points, grouped horizontally",
+
+    -- header text
+    head = ' (PVE)',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -84,7 +96,11 @@ local CURRENCY_VIEWS = {
   },
 
   ["pve"] = {
+    -- help description
     desc = "PVE points, grouped vertically",
+
+    -- header text
+    head = ' (PVE)',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -97,7 +113,11 @@ local CURRENCY_VIEWS = {
   },
 
   ["pvp-wide"] = {
+    -- help description
     desc = "PVP points, grouped horizontally",
+
+    -- header text
+    head = ' (PVP)',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -111,7 +131,11 @@ local CURRENCY_VIEWS = {
   },
 
   ["pvp"] = {
+    -- help description
     desc = "PVP points, grouped vertically",
+
+    -- header text
+    head = ' (PVP)',
 
     init = {
       'LEFT', 'RIGHT', 'RIGHT', 'RIGHT',
@@ -306,6 +330,8 @@ local function db_init(guid)
   local class, class_fn = UnitClass('player')
   db[guid].class = class_fn
 
+  db[guid].money = GetMoney()
+
   -- initialize currency table
   if db[guid].currencies == nil then
     db[guid].currencies = {}
@@ -383,6 +409,7 @@ end
 local function get_char_header(guid, char) 
   local icon_str = ''
   local col_str = 'ffffff'
+  local money_str = ''
 
   if char.class then
     -- add icon for this character
@@ -408,8 +435,20 @@ local function get_char_header(guid, char)
     -- chat_log(string.format('class = %s, col_str = %s', char.class, col_str))
   end
 
+  -- append money
+  if char.money then
+    -- strip silver and copper
+    local money = floor(char.money / 10000) * 10000
+    money_str = string.format(" (%s)", GetCoinTextureString(money))
+  end
+
   -- TODO: add support for CLASS_ICON_TCOORDS
-  return string.format('%s|cff%s%s|r', icon_str, col_str, char.name)
+  return string.format('%s|cff%s%s|r%s',
+    icon_str,
+    col_str,
+    char.name,
+    money_str
+  )
 end
 
 local function get_row(curr_id, curr) 
@@ -466,13 +505,20 @@ end
 -- data broker methods
 --
 
-function get_tooltip_header()
+function get_tooltip_header(view)
   local _, _, icon = GetCurrencyInfo(396)
+  local view_text = CURRENCY_VIEWS[config_get('view')].head
 
-  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s|r", 
+  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r", 
     icon,
-    "Cappy"
+    "Cappy",
+    view_text
   )
+end
+
+function add_tooltip_header(tooltip)
+  tooltip:AddLine(get_tooltip_header())
+  -- TODO: add text to right-click for reset?
 end
 
 function add_char_to_tooltip(tooltip, guid, char, layout)
@@ -567,9 +613,37 @@ local cdo = LDB:NewDataObject(ADDON_NAME, {
   text = ""
 })
 
-function cdo.OnClick()
-  -- show currency frame on click
-  ToggleCharacter("TokenFrame")
+function cdo.OnClick(self, btn, down)
+  local NEXT_VIEW = {
+    ["all"]       = "pve",
+    ["pve"]       = "pvp",
+    ["pvp"]       = "all-wide",
+    ["all-wide"]  = "pve-wide",
+    ["pve-wide"]  = "pvp-wide",
+    ["pvp-wide"]  = "all",
+  }
+
+  if not down then
+    if btn == 'RightButton' then
+      -- reset view
+      config_set('view', 'all')
+    elseif  btn == 'LeftButton' then
+      -- switch to next view
+      config_set('view', NEXT_VIEW[config_get('view')])
+    end
+
+    -- release existing tooltip, if necessary
+    if tooltip then
+      LibQTip:Release(tooltip)
+      tooltip = nil
+    end
+
+    -- redraw tooltip
+    cdo.OnEnter(self)
+
+    -- show currency frame on click
+    -- ToggleCharacter("TokenFrame")
+  end
 end
 
 function cdo.OnEnter(self)
@@ -587,7 +661,7 @@ function cdo.OnEnter(self)
   tooltip = LibQTip:Acquire(ADDON_NAME .. 'Tooltip', #cols, unpack(cols))
 
   -- add header
-  tooltip:AddHeader(get_tooltip_header())
+  add_tooltip_header(tooltip)
   tooltip:AddLine(' ')
 
   -- walk over characters
@@ -630,6 +704,7 @@ local frame = CreateFrame("frame")
 
 -- bind to events
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("PLAYER_MONEY")
 frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
 frame:RegisterEvent("ADDON_LOADED")
 
