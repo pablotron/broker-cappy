@@ -1,7 +1,7 @@
 local ADDON_NAME = "Broker_Cappy"
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 local LibQTip = LibStub:GetLibrary('LibQTip-1.0')
-local tooltip
+local tooltip, curr_filter_id, cached_cdo_frame
 
 -- tracked currency ids
 local CURRENCY_IDS = {
@@ -506,9 +506,14 @@ end
 -- data broker methods
 --
 
-function get_tooltip_header(view)
+function get_tooltip_header(filter_id)
   local _, _, icon = GetCurrencyInfo(396)
   local view_text = CURRENCY_VIEWS[config_get('view')].head
+
+  -- override view text
+  if filter_id then
+    view_text = string.format(" (%s)", GetCurrencyInfo(filter_id))
+  end
 
   return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r",
     icon,
@@ -517,9 +522,8 @@ function get_tooltip_header(view)
   )
 end
 
-function add_tooltip_header(tooltip)
-  tooltip:AddLine(get_tooltip_header())
-  -- TODO: add text to right-click for reset?
+function add_tooltip_header(tooltip, filter_id)
+  tooltip:AddLine(get_tooltip_header(filter_id))
 end
 
 function add_cell_link(tooltip, data)
@@ -532,60 +536,70 @@ function add_cell_link(tooltip, data)
   end, data)
 
   tooltip:SetCellScript(data.line, data.col, 'OnMouseUp', function(self, data)
-    local curr_name = GetCurrencyInfo(data.curr_id)
-    chat_log('clicked ' .. curr_name)
+    -- local curr_name = GetCurrencyInfo(data.curr_id)
+    -- chat_log('clicked ' .. curr_name)
+    curr_filter_id = data.curr_id
+    redraw_tooltip()
   end, data)
 end
 
-function add_char_to_tooltip(tooltip, guid, char, layout)
+function add_char_to_tooltip(tooltip, guid, char, layout, filter_id)
   -- add character name
   tooltip:AddLine(get_char_header(guid, char))
 
   if char.currencies then
-    -- iterate over currency layout
-    for _, row_curr_ids in ipairs(layout.grid) do
-      local row = {};
+    if filter_id then
+      local curr = char.currencies[filter_id]
 
-      -- chat_log('adding row')
-      -- chat_log('#row_curr_ids = ' .. #row_curr_ids)
+      if curr then
+        tooltip:AddLine(unpack(get_row(filter_id, curr)))
+      end
+    else
+      -- iterate over currency layout
+      for _, row_curr_ids in ipairs(layout.grid) do
+        local row = {};
 
-      for _, curr_id in ipairs(row_curr_ids) do
-        local curr = char.currencies[curr_id]
+        -- chat_log('adding row')
+        -- chat_log('#row_curr_ids = ' .. #row_curr_ids)
 
-        -- chat_log('curr_id = ' .. curr_id)
+        for _, curr_id in ipairs(row_curr_ids) do
+          local curr = char.currencies[curr_id]
 
-        if curr then
-          -- add row
-          -- chat_log('add row')
-          for _, val in ipairs(get_row(curr_id, curr)) do
-            table.insert(row, val)
+          -- chat_log('curr_id = ' .. curr_id)
+
+          if curr then
+            -- add row
+            -- chat_log('add row')
+            for _, val in ipairs(get_row(curr_id, curr)) do
+              table.insert(row, val)
+            end
+          else
+            -- add empty set
+            -- chat_log('empty set')
+            for i = 1, 4 do
+              table.insert(row, ' ')
+            end
           end
-        else
-          -- add empty set
-          -- chat_log('empty set')
-          for i = 1, 4 do
-            table.insert(row, ' ')
-          end
+
+          -- add empty cell for padding
+          table.insert(row, ' ')
         end
 
-        -- add empty cell for padding
-        table.insert(row, ' ')
-      end
+        -- remove trailing padding
+        row[#row] = nil
 
-      -- remove trailing padding
-      row[#row] = nil
+        -- chat_log('adding combined row ')
+        -- add combined row
+        tooltip:AddLine(unpack(row))
 
-      -- chat_log('adding combined row ')
-      -- add combined row
-      tooltip:AddLine(unpack(row))
-
-      -- add cell filters
-      for i, curr_id in ipairs(row_curr_ids) do
-        add_cell_link(tooltip, {
-          line    = tooltip:GetLineCount(),
-          col     = (i - 1) * 5 + 1,
-          curr_id = curr_id,
-        })
+        -- add cell filters
+        for i, curr_id in ipairs(row_curr_ids) do
+          add_cell_link(tooltip, {
+            line    = tooltip:GetLineCount(),
+            col     = (i - 1) * 5 + 1,
+            curr_id = curr_id,
+          })
+        end
       end
     end
   end
@@ -633,6 +647,18 @@ function add_char_extras_to_tooltip(tooltip, guid, char)
   end
 end
 
+function add_clear_filter_btn(tooltip, filter_id)
+  local name, _, icon = GetCurrencyInfo(filter_id)
+  local f = "|TInterface/Icons/%s:0|t |cFFFFFF00Remove Filter|r"
+
+  tooltip:AddLine(string.format(f, icon))
+  add_cell_link(tooltip, {
+    line    = tooltip:GetLineCount(),
+    col     = 1,
+    curr_id = nil,
+  })
+end
+
 function add_tooltip_bbar(tooltip)
   tooltip:AddSeparator()
   tooltip:AddLine(' ')
@@ -644,6 +670,17 @@ local cdo = LDB:NewDataObject(ADDON_NAME, {
   -- icon = "Interface/Icons/Inv_Misc_Armorkit_18",
   text = ""
 })
+
+function redraw_tooltip()
+  -- release existing tooltip, if necessary
+  if tooltip then
+    LibQTip:Release(tooltip)
+    tooltip = nil
+  end
+
+  -- redraw tooltip
+  cdo.OnEnter(cached_cdo_frame)
+end
 
 function cdo.OnClick(self, btn, down)
   local NEXT_VIEW = {
@@ -657,21 +694,22 @@ function cdo.OnClick(self, btn, down)
 
   if not down then
     if btn == 'RightButton' then
-      -- reset view
+      -- reset view, remove filter
       config_set('view', 'all')
-    elseif  btn == 'LeftButton' then
-      -- switch to next view
-      config_set('view', NEXT_VIEW[config_get('view')])
-    end
-
-    -- release existing tooltip, if necessary
-    if tooltip then
-      LibQTip:Release(tooltip)
-      tooltip = nil
+      curr_filter_id = nil
+    elseif btn == 'LeftButton' then
+      if curr_filter_id then
+        -- clear filter
+        curr_filter_id = nil
+      else
+        -- switch to next view
+        config_set('view', NEXT_VIEW[config_get('view')])
+      end
     end
 
     -- redraw tooltip
-    cdo.OnEnter(cdo)
+    cached_cdo_frame = self
+    redraw_tooltip()
 
     -- show currency frame on click
     -- ToggleCharacter("TokenFrame")
@@ -693,13 +731,13 @@ function cdo.OnEnter(self)
   tooltip = LibQTip:Acquire(ADDON_NAME .. 'Tooltip', #cols, unpack(cols))
 
   -- add header
-  add_tooltip_header(tooltip)
+  add_tooltip_header(tooltip, curr_filter_id)
   tooltip:AddLine(' ')
 
   -- walk over characters
   for guid, char in sorted_by_name_or_key(db) do
     if guid ~= curr_guid then
-      add_char_to_tooltip(tooltip, guid, char, layout)
+      add_char_to_tooltip(tooltip, guid, char, layout, curr_filter_id)
     end
   end
 
@@ -708,15 +746,22 @@ function cdo.OnEnter(self)
   tooltip:AddLine(' ')
 
   -- add current character
-  add_char_to_tooltip(tooltip, curr_guid, db[curr_guid], layout)
+  add_char_to_tooltip(tooltip, curr_guid, db[curr_guid], layout, curr_filter_id)
 
   -- add extra currencies for current character to tooltip
-  add_char_extras_to_tooltip(tooltip, curr_guid, db[curr_guid])
+  if curr_filter_id then
+    add_clear_filter_btn(tooltip, curr_filter_id)
+  else
+    add_char_extras_to_tooltip(tooltip, curr_guid, db[curr_guid])
+  end
 
   -- anchor, init scrolling, and set autohide delay
   tooltip:SmartAnchorTo(self)
   tooltip:UpdateScrolling()
   tooltip:SetAutoHideDelay(0.25, self)
+
+  -- cache cdo frame
+  cached_cdo_frame = self
 
   -- show tooltip
   tooltip:Show()
