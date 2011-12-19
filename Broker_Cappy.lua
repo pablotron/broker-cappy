@@ -533,14 +533,30 @@ end
     
 
 function add_char_extras_to_tooltip(tooltip, guid, char)
+  local ids = CURRENCY_IDS
+
+  -- sort currency ids by name
+  table.sort(ids, function(a, b)
+    local an = GetCurrencyInfo(a)
+    local bn = GetCurrencyInfo(b)
+
+    return (an or '') < (bn or '')
+  end)
+
   if char.currencies then
-    for _, curr_id in pairs(CURRENCY_IDS) do
+    for _, curr_id in ipairs(ids) do
       local curr = char.currencies[curr_id]
       if not is_standard_currency(curr_id) and curr then
         tooltip:AddLine(unpack(get_row(curr_id, curr)))
       end
     end
   end
+end
+
+function add_tooltip_bbar(tooltip)
+  tooltip:AddSeparator()
+  tooltip:AddLine(' ')
+
 end
 
 -- create cappy data object
