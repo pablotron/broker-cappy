@@ -254,6 +254,7 @@ COMMANDS = {
     desc = "Print list of commands.",
 
     fn = function(val)
+      -- TODO: add detailed usage
       print("Available commands:")
       for _, v in sorted_by_name_or_key(COMMANDS) do
         print(string.format("  /cappy %s - %s", v.name, v.desc))
