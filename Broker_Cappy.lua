@@ -505,12 +505,13 @@ function bac.OnEnter(self)
 
   -- show tooltip
   tooltip:SmartAnchorTo(self)
+  tooltip:SetAutoHideDelay(0.25, self)
   tooltip:Show()
 end
 
 function bac.OnLeave(self)
-  LibQTip:Release(tooltip)
-  tooltip = nil
+  -- LibQTip:Release(tooltip)
+  -- tooltip = nil
 end
 
 --
