@@ -151,7 +151,7 @@ end
 
 local function chat_log(str)
   DEFAULT_CHAT_FRAME:AddMessage(string.format("%s: %s",
-    ADDON_NAME, 
+    "Cappy", 
     str
   ))
 end
@@ -418,6 +418,15 @@ end
 -- data broker methods
 --
 
+function get_tooltip_header()
+  local _, _, icon = GetCurrencyInfo(396)
+
+  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s|r", 
+    icon,
+    "Cappy"
+  )
+end
+
 function add_char_to_tooltip(tooltip, guid, char, layout)
   -- add character name
   tooltip:AddLine(get_char_header(guid, char))
@@ -482,11 +491,17 @@ function bac.OnEnter(self)
   local cols = layout.init
   local curr_guid = UnitGUID('player')
 
+  -- release existing tooltip, if necessary
+  if tooltip then
+    LibQTip:Release(tooltip)
+    tooltip = nil
+  end
+
   -- create tooltip
   tooltip = LibQTip:Acquire(ADDON_NAME .. 'Tooltip', #cols, unpack(cols))
 
   -- add header
-  tooltip:AddHeader(ADDON_NAME)
+  tooltip:AddHeader(get_tooltip_header())
   tooltip:AddLine(' ')
 
   -- walk over characters
