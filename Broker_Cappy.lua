@@ -11,9 +11,6 @@ local CURRENCY_IDS = {
   390,  -- Conquest Points
 }
 
--- FIXME: make configurable
-local CURRENCY_VIEW = 'v_all'
-
 -- layout for each character
 local CURRENCY_VIEWS = {
   ["all"] = {
@@ -31,7 +28,7 @@ local CURRENCY_VIEWS = {
     }
   },
 
-  ["all-h"] = {
+  ["all-wide"] = {
     desc = "PVE and PVP points, grouped horizontally",
 
     init = {
@@ -46,7 +43,7 @@ local CURRENCY_VIEWS = {
     }
   },
 
-  ["pve-h"] = {
+  ["pve-wide"] = {
     desc = "PVE points, grouped horizontally",
 
     init = {
@@ -73,7 +70,7 @@ local CURRENCY_VIEWS = {
     }
   },
 
-  ["pvp-h"] = {
+  ["pvp-wide"] = {
     desc = "PVP points, grouped horizontally",
 
     init = {
@@ -115,10 +112,58 @@ local CLASS_ICONS = {
   WARRIOR     = "Interface/Icons/INV_Sword_27",
 }
 
+--
+-- utility functions
+--
+
+local function sorted_by_name_or_key(t) 
+  local ids = {}
+
+  -- build unsorted list of ids
+  for k, _ in pairs(t) do 
+    table.insert(ids, k)
+  end
+
+  -- sort ids by name field or by key
+  table.sort(ids, function(a, b)
+    local av, bv = (t[a].name or a), (t[b].name or b)
+    return av < bv
+  end)
+
+  -- iterator variable
+  local i = 0
+
+  local iter = function()
+    -- increment iterator variable
+    i = i + 1
+
+    -- yield next value, or stop if we're at the end
+    if ids[i] == nil then
+      return nil
+    else
+      return ids[i], t[ids[i]]
+    end
+  end
+
+  -- return iterator
+  return iter
+end
+
+local function chat_log(str)
+  DEFAULT_CHAT_FRAME:AddMessage(string.format("%s: %s",
+    ADDON_NAME, 
+    str
+  ))
+end
+
+--
+-- config functions
+--
+
 local function config_init(force)
   if force or not cappy_config then
     cappy_config = {
-      view = 'v_all'
+      view = 'all'
     }
   end
 end
@@ -134,24 +179,80 @@ local function config_get(k)
   return cappy_config[k]
 end
 
-SLASH_CAPPY1 = '/cappy'
-SlashCmdList.CAPPY = function(arg, _)
-  if not arg or string.match(arg, '^%s*$') or string.match(arg, 'help') then
-    chat_log("TODO: print usage")
-  elseif string.match(arg, '^view list|views|list') then
-    chat_log("TODO: list views")
-  elseif arg == 'reset' then
-    config_init(true)
-    chat_log("configuration reset to default")
-  elseif md = string.match(arg, '^view (%w+)$') then
-    if CURRENCY_VIEWS[md[1]] then
-      config_set('view', md[1])
-      chat_log('view set to ' .. md[1])
-    else
-      chat_log('unknown view: ' .. md[1])
+local COMMANDS
+COMMANDS = {
+  ["help"] = {
+    name = "help",
+    desc = "Print list of commands.",
+
+    fn = function(val) 
+      for _, v in sorted_by_name_or_key(COMMANDS) do
+        print(string.format("  /cappy %s - %s", v.name, v.desc))
+      end
     end
-  else
-    chat_log("Unknown command")
+  },
+
+  ["^reset"] = {
+    name = "reset",
+    desc = "Restore default Cappy settings.",
+
+    fn = function(val) 
+      config_init(true)
+      print("Cappy configuration reset.")
+    end
+  },
+
+  ["^list"] = {
+    name = "list",
+    desc = "List available views.",
+
+    fn = function(val) 
+      print("Available views:")
+      for k, v in sorted_by_name_or_key(CURRENCY_VIEWS) do
+        print(string.format("  %s - %s", v.name or k, v.desc))
+      end
+    end
+  },
+
+  ["^view%s+([%w-]+)"] = {
+    name = "view <name>",
+    desc = "Set a new view (use '/cappy list' to list available views).",
+
+    fn = function(val) 
+      if CURRENCY_VIEWS[val] then
+        config_set('view', val)
+        print('View set to ' .. val)
+      else
+        print('Unknown view: ' .. val)
+      end
+    end
+  },
+}
+
+SLASH_CAPPY1 = '/cappy'
+SlashCmdList.CAPPY = function(str, _)
+  if not str or str == '' then
+    str = 'help'
+  elseif str == 'ls' or str == 'view list' or str == 'view' then
+    str = 'list'
+  end
+
+  local matched = false
+  for re, cmd in pairs(COMMANDS) do
+    local val = string.match(str, re)
+  
+    -- print('re: ' .. re)
+
+    if val then
+      -- print('starting cmd: ' .. re)
+      cmd.fn(val)
+      matched = true
+      break
+    end
+  end
+
+  if not matched then
+    print("Unknown command: " .. str)
   end
 end
 
@@ -181,13 +282,6 @@ local function db_init(guid)
   if db[guid].currencies == nil then
     db[guid].currencies = {}
   end
-end
-
-local function chat_log(str)
-  DEFAULT_CHAT_FRAME:AddMessage(string.format("%s: %s",
-    ADDON_NAME, 
-    str
-  ))
 end
 
 local function update()
@@ -324,38 +418,6 @@ end
 -- data broker methods
 --
 
-local function sorted_accounts(t) 
-  local ids = {}
-
-  -- build unsorted list of ids
-  for k, _ in pairs(t) do 
-    table.insert(ids, k)
-  end
-
-  -- sort ids by name
-  table.sort(ids, function(a, b)
-    return t[a].name < t[b].name
-  end)
-
-  -- iterator variable
-  local i = 0
-
-  local iter = function()
-    -- increment iterator variable
-    i = i + 1
-
-    -- yield next value, or stop if we're at the end
-    if ids[i] == nil then
-      return nil
-    else
-      return ids[i], t[ids[i]]
-    end
-  end
-
-  -- return iterator
-  return iter
-end
-
 function add_char_to_tooltip(tooltip, guid, char, layout)
   -- add character name
   tooltip:AddLine(get_char_header(guid, char))
@@ -416,7 +478,7 @@ function bac.OnClick()
 end
 
 function bac.OnEnter(self)
-  local layout = CURRENCY_VIEWS[CURRENCY_VIEW]
+  local layout = CURRENCY_VIEWS[config_get('view')]
   local cols = layout.init
   local curr_guid = UnitGUID('player')
 
@@ -428,7 +490,7 @@ function bac.OnEnter(self)
   tooltip:AddLine(' ')
 
   -- walk over characters
-  for guid, char in sorted_accounts(db) do
+  for guid, char in sorted_by_name_or_key(db) do
     if guid ~= curr_guid then
       add_char_to_tooltip(tooltip, guid, char, layout)
     end
