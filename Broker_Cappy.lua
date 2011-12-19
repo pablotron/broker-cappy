@@ -166,11 +166,11 @@ local CLASS_ICONS = {
 -- utility functions
 --
 
-local function sorted_by_name_or_key(t) 
+local function sorted_by_name_or_key(t)
   local ids = {}
 
   -- build unsorted list of ids
-  for k, _ in pairs(t) do 
+  for k, _ in pairs(t) do
     table.insert(ids, k)
   end
 
@@ -201,7 +201,7 @@ end
 
 local function chat_log(str)
   DEFAULT_CHAT_FRAME:AddMessage(string.format("%s: %s",
-    "Cappy", 
+    "Cappy",
     str
   ))
 end
@@ -218,13 +218,13 @@ local function config_init(force)
   end
 end
 
-local function config_set(k, v) 
+local function config_set(k, v)
   config_init()
   cappy_config[k] = v
   return v
 end
 
-local function config_get(k) 
+local function config_get(k)
   config_init()
   return cappy_config[k]
 end
@@ -235,7 +235,7 @@ COMMANDS = {
     name = "help",
     desc = "Print list of commands.",
 
-    fn = function(val) 
+    fn = function(val)
       print("Available commands:")
       for _, v in sorted_by_name_or_key(COMMANDS) do
         print(string.format("  /cappy %s - %s", v.name, v.desc))
@@ -247,7 +247,7 @@ COMMANDS = {
     name = "reset",
     desc = "Restore default Cappy settings.",
 
-    fn = function(val) 
+    fn = function(val)
       config_init(true)
       print("Cappy configuration reset.")
     end
@@ -257,7 +257,7 @@ COMMANDS = {
     name = "list",
     desc = "List available views.",
 
-    fn = function(val) 
+    fn = function(val)
       print("Available views:")
       for k, v in sorted_by_name_or_key(CURRENCY_VIEWS) do
         print(string.format("  %s - %s", v.name or k, v.desc))
@@ -270,7 +270,7 @@ COMMANDS = {
     name = "view <name>",
     desc = "Set a new view (use '/cappy list' to list available views).",
 
-    fn = function(val) 
+    fn = function(val)
       if CURRENCY_VIEWS[val] then
         config_set('view', val)
         print('View set to ' .. val)
@@ -281,6 +281,7 @@ COMMANDS = {
   },
 }
 
+-- src: http://www.wowwiki.com/Creating_a_slash_command
 SLASH_CAPPY1 = '/cappy'
 SlashCmdList.CAPPY = function(str, _)
   if not str or str == '' then
@@ -292,7 +293,7 @@ SlashCmdList.CAPPY = function(str, _)
   local matched = false
   for re, cmd in pairs(COMMANDS) do
     local val = string.match(str, re)
-  
+
     -- print('re: ' .. re)
 
     if val then
@@ -406,7 +407,7 @@ local function normalize_cap(curr_id, val)
   end
 end
 
-local function get_char_header(guid, char) 
+local function get_char_header(guid, char)
   local icon_str = ''
   local col_str = 'ffffff'
   local money_str = ''
@@ -424,7 +425,7 @@ local function get_char_header(guid, char)
     local c = RAID_CLASS_COLORS[char.class]
 
     if c then
-      col_str = string.format('%02x%02x%02x', 
+      col_str = string.format('%02x%02x%02x',
         floor(255 * c.r),
         floor(255 * c.g),
         floor(255 * c.b)
@@ -451,7 +452,7 @@ local function get_char_header(guid, char)
   )
 end
 
-local function get_row(curr_id, curr) 
+local function get_row(curr_id, curr)
   local cap_str, cap_pct = '  ', ' '
   local name, amount, icon, earnedThisWeek, weeklyMax, totalMax, isDiscovered = GetCurrencyInfo(curr_id)
 
@@ -494,7 +495,7 @@ local function get_row(curr_id, curr)
 
   -- build/return formatted row
   return {
-    string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s|r", icon, name),
+    string.format("\124TInterface/Icons/%s:0\124t %s", icon, name),
     curr.amount,
     string.format("%s", cap_str),
     cap_pct
@@ -509,7 +510,7 @@ function get_tooltip_header(view)
   local _, _, icon = GetCurrencyInfo(396)
   local view_text = CURRENCY_VIEWS[config_get('view')].head
 
-  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r", 
+  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r",
     icon,
     "Cappy",
     view_text
@@ -519,6 +520,21 @@ end
 function add_tooltip_header(tooltip)
   tooltip:AddLine(get_tooltip_header())
   -- TODO: add text to right-click for reset?
+end
+
+function add_cell_link(tooltip, data)
+  tooltip:SetCellScript(data.line, data.col, 'OnEnter', function(self, data)
+    tooltip:SetCellColor(data.line, data.col, 0, 0, 1.0, 0.5)
+  end, data)
+
+  tooltip:SetCellScript(data.line, data.col, 'OnLeave', function(self, data)
+    tooltip:SetCellColor(data.line, data.col, 0, 0, 0, 0)
+  end, data)
+
+  tooltip:SetCellScript(data.line, data.col, 'OnMouseUp', function(self, data)
+    local curr_name = GetCurrencyInfo(data.curr_id)
+    chat_log('clicked ' .. curr_name)
+  end, data)
 end
 
 function add_char_to_tooltip(tooltip, guid, char, layout)
@@ -562,6 +578,15 @@ function add_char_to_tooltip(tooltip, guid, char, layout)
       -- chat_log('adding combined row ')
       -- add combined row
       tooltip:AddLine(unpack(row))
+
+      -- add cell filters
+      for i, curr_id in ipairs(row_curr_ids) do
+        add_cell_link(tooltip, {
+          line    = tooltip:GetLineCount(),
+          col     = (i - 1) * 5 + 1,
+          curr_id = curr_id,
+        })
+      end
     end
   end
 
@@ -578,7 +603,7 @@ function is_standard_currency(curr_id)
 
   return false
 end
-    
+
 
 function add_char_extras_to_tooltip(tooltip, guid, char)
   local ids = CURRENCY_IDS
@@ -596,6 +621,13 @@ function add_char_extras_to_tooltip(tooltip, guid, char)
       local curr = char.currencies[curr_id]
       if not is_standard_currency(curr_id) and curr then
         tooltip:AddLine(unpack(get_row(curr_id, curr)))
+
+        -- add currency link
+        add_cell_link(tooltip, {
+          line    = tooltip:GetLineCount(),
+          col     = 1,
+          curr_id = curr_id,
+        })
       end
     end
   end
@@ -639,7 +671,7 @@ function cdo.OnClick(self, btn, down)
     end
 
     -- redraw tooltip
-    cdo.OnEnter(self)
+    cdo.OnEnter(cdo)
 
     -- show currency frame on click
     -- ToggleCharacter("TokenFrame")
@@ -709,7 +741,7 @@ frame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
 frame:RegisterEvent("ADDON_LOADED")
 
 -- add event handler
-frame:SetScript("OnEvent", function(self, ev, ...) 
+frame:SetScript("OnEvent", function(self, ev, ...)
   -- print version information on load
   if ev == "PLAYER_ENTERING_WORLD" then
     chat_log(string.format("version %s loaded.",
