@@ -249,7 +249,7 @@ end
 
 local COMMANDS
 COMMANDS = {
-  ["help"] = {
+  ["^help"] = {
     name = "help",
     desc = "Print list of commands.",
 
@@ -288,7 +288,7 @@ COMMANDS = {
   },
 
   ["^filter%s*(.*)"] = {
-    name = "filter",
+    name = "filter <name>",
     desc = "Set/clear currency filter.",
 
     fn = function(val)
@@ -327,7 +327,7 @@ COMMANDS = {
   },
 
   ["^hide%s*(.*)"] = {
-    name = "hide",
+    name = "hide <name>",
     desc = "Ignore character.",
 
     fn = function(val)
@@ -353,7 +353,7 @@ COMMANDS = {
   },
 
   ["^show%s*(.*)"] = {
-    name = "show",
+    name = "show <name>",
     desc = "Stop ignoring character.",
 
     fn = function(val)
