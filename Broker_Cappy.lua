@@ -444,11 +444,13 @@ local function db_init(guid)
   -- handle first time load, name changes, faction changes, etc
   db[guid].name = GetUnitName('player')
 
-  -- save class (for future color of player text)
+  -- save class
   local class, class_fn = UnitClass('player')
   db[guid].class = class_fn
 
+  -- save money and time
   db[guid].money = GetMoney()
+  db[guid].time = os.time()
 
   -- initialize currency table
   if db[guid].currencies == nil then
