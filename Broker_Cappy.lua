@@ -256,15 +256,15 @@ COMMANDS = {
     fn = function(val)
       local LINES = {
         "Cappy lets you quickly view gold and points across characters.",
-        "Left-click on the Cappy icon to switc between the six",
-        "built-in display modes.  You can also show one particular",
+        "Left-click on the Cappy icon to switch between the six",
+        "available views. You can also show one particular",
         "currency across all characters by clicking on the currency.",
         "Right-click on the Cappy icon to remove any filter and",
         "restore the default view.",
       }
 
-      print(LINES:concat(' '))
-      print('')
+      print(table.concat(LINES, ' '))
+      print(' ')
       print("Available commands:")
       for _, v in sorted_by_name_or_key(COMMANDS) do
         print(string.format("  /cappy %s - %s", v.name, v.desc))
