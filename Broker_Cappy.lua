@@ -450,7 +450,7 @@ local function db_init(guid)
 
   -- save money and time
   db[guid].money = GetMoney()
-  db[guid].time = os.time()
+  db[guid].time = time()
 
   -- initialize currency table
   if db[guid].currencies == nil then
