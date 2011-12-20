@@ -307,9 +307,9 @@ COMMANDS = {
           local curr_name = GetCurrencyInfo(curr_id)
 
           -- lower case currency name
-          curr_name = curr_name:lower()
+          local lc_curr_name = curr_name:lower()
 
-          if curr_name:match(val) then
+          if lc_curr_name:match(val) then
             print("Cappy: Currency filter set to " .. curr_name);
 
             -- set currency filter
