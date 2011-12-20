@@ -925,9 +925,10 @@ frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function(self, ev, ...)
   -- print version information on load
   if ev == "PLAYER_ENTERING_WORLD" then
-    chat_log(string.format("version %s loaded.",
-      GetAddOnMetadata(ADDON_NAME, "Version")
-    ))
+    -- disable this, because it spams the damn chat window
+    -- chat_log(string.format("version %s loaded.",
+    --   GetAddOnMetadata(ADDON_NAME, "Version")
+    -- ))
   end
 
   -- update currency state
