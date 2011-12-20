@@ -298,9 +298,16 @@ COMMANDS = {
         -- clear currency filter
         curr_filter_id = nil
       else
+        -- lower-case search string
+        val = val:lower()
+
         -- look for matching currency by name
         for _, curr_id in pairs(CURRENCY_IDS) do
+          -- get currency information
           local curr_name = GetCurrencyInfo(curr_id)
+
+          -- lower case currency name
+          curr_name = curr_name:lower()
 
           if curr_name:match(val) then
             print("Cappy: Currency filter set to " .. curr_name);
