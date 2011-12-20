@@ -270,7 +270,7 @@ COMMANDS = {
       config_init(true)
       curr_filter_id = nil
       -- TODO: reset icons
-      print("Cappy configuration reset.")
+      print("Cappy: Configuration reset.")
     end
   },
 
@@ -289,28 +289,85 @@ COMMANDS = {
 
   ["^filter%s*(.*)"] = {
     name = "filter",
-    desc = "Filter currencies (not implemented).",
+    desc = "Set/clear currency filter.",
 
     fn = function(val)
-      print("Not implemented yet")
+      if not val or not val:match('%w') then
+        print("Cappy: Cleared currency filter.");
+
+        -- clear currency filter
+        curr_filter_id = nil
+      else
+        -- look for matching currency by name
+        for _, curr_id in pairs(CURRENCY_IDS) do
+          local curr_name = GetCurrencyInfo(curr_id)
+
+          if curr_name:match(val) then
+            print("Cappy: Currency filter set to " .. curr_name);
+
+            -- set currency filter
+            curr_filter_id = curr_id
+
+            -- exit
+            return
+          end
+        end
+
+        -- ack!
+        print("Cappy: no matching currency found.")
+      end
     end
   },
 
   ["^hide%s*(.*)"] = {
     name = "hide",
-    desc = "Ignore character (not implemented).",
+    desc = "Ignore character.",
 
     fn = function(val)
-      print("Not implemented yet")
+      -- get ignore lut
+      local ignored = config_get('ignored') or {}
+
+      -- lower-case search string
+      val = val:lower()
+
+      -- walk over known characters
+      for guid, char in pairs(db) do
+        if char.name:lower():match(val) then
+          print("Cappy: Hiding " .. char.name)
+
+          -- add character to ignore list
+          ignored[guid] = true
+        end
+      end
+
+      -- save ignore list (in case it wasn't defined)
+      config_set('ignored', ignored)
     end
   },
 
   ["^show%s*(.*)"] = {
     name = "show",
-    desc = "Stop ignoring character (not implemented).",
+    desc = "Stop ignoring character.",
 
     fn = function(val)
-      print("Not implemented yet")
+      -- get ignore lut
+      local ignored = config_get('ignored') or {}
+
+      -- lower-case search string
+      val = val:lower()
+
+      -- walk over known characters
+      for guid, char in pairs(db) do
+        if char.name:lower():match(val) and ignored[guid] then
+          print("Cappy: Showing " .. char.name)
+
+          -- remove character from ignore list
+          ignored[guid] = nil
+        end
+      end
+
+      -- save ignore list (in case it wasn't defined)
+      config_set('ignored', ignored)
     end
   },
 
@@ -321,14 +378,14 @@ COMMANDS = {
     fn = function(val)
       if CURRENCY_VIEWS[val] then
         config_set('view', val)
-        print('View set to ' .. val)
+        print('Cappy: View set to ' .. val)
         
         if tooltip then
           -- FIXME
           -- redraw_tooltip()
         end
       else
-        print('Unknown view: ' .. val)
+        print('Cappy: Unknown view: ' .. val)
       end
     end
   },
@@ -358,7 +415,7 @@ SlashCmdList.CAPPY = function(str, _)
   end
 
   if not matched then
-    print("Unknown command: " .. str)
+    print("Cappy: Unknown command: " .. str)
   end
 end
 
@@ -779,6 +836,7 @@ function cdo.OnEnter(self)
   local layout = CURRENCY_VIEWS[config_get('view')]
   local cols = layout.init
   local curr_guid = UnitGUID('player')
+  local ignored = config_get('ignored') or {}
 
   -- release existing tooltip, if necessary
   if tooltip then
@@ -795,7 +853,7 @@ function cdo.OnEnter(self)
 
   -- walk over characters
   for guid, char in sorted_by_name_or_key(db) do
-    if guid ~= curr_guid then
+    if guid ~= curr_guid and not ignored[guid] then
       add_char_to_tooltip(tooltip, guid, char, layout, curr_filter_id)
     end
   end
