@@ -27,6 +27,7 @@ local CURRENCY_IDS = {
   -- 401, -- Tol'vir Archaeology Fragment
   402, -- Chef's Award
   416, -- Mark of the World Tree
+  515, -- Darkmoon Prize Ticket
 }
 
 -- list of currencies to exclude from "extra" currencies
