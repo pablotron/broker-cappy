@@ -1,7 +1,7 @@
-## Interface: 40300
+## Interface: 50004
 ## Title: Broker_Cappy
 ## Notes: Track justice, valor, honor, and conquest points across characters.
-## Version: 0.1
+## Version: 0.3
 ## Dependencies: 
 ## Author: Paul Duncan
 ## X-eMail: broker-cappy@pablotron.org

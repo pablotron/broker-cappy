@@ -28,6 +28,10 @@ local CURRENCY_IDS = {
   402, -- Chef's Award
   416, -- Mark of the World Tree
   515, -- Darkmoon Prize Ticket
+  81, -- Epicurean Award
+  738, -- Lesser Charm of Good Fortune
+  697, -- Elder Charm of Good Fortune
+  698, -- Zen Jewelcrafter's Token
 }
 
 -- list of currencies to exclude from "extra" currencies
