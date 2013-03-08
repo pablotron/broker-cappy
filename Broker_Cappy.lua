@@ -522,7 +522,7 @@ local function make_broker_text()
     end
 
     -- add to result
-    r = r .. string.format("\124TInterface/Icons/%s:0\124t %s ", icon, num)
+    r = r .. string.format("\124T%s:0\124t %s ", icon, num)
   end
 
   -- return result
@@ -629,7 +629,7 @@ local function get_row(curr_id, curr)
 
   -- build/return formatted row
   return {
-    string.format("\124TInterface/Icons/%s:0\124t %s", icon, name),
+    string.format("\124T%s:0\124t %s", icon, name),
     curr.amount,
     string.format("%s", cap_str),
     cap_pct
@@ -649,7 +649,7 @@ function get_tooltip_header(filter_id)
     view_text = string.format(" (%s)", name)
   end
 
-  return string.format("\124TInterface/Icons/%s:0\124t |cFFFFFFFF%s%s|r",
+  return string.format("\124T%s:0\124t |cFFFFFFFF%s%s|r",
     icon,
     "Cappy",
     view_text
@@ -786,7 +786,7 @@ end
 
 function add_clear_filter_btn(tooltip, filter_id)
   local name, _, icon = GetCurrencyInfo(filter_id)
-  local f = "|TInterface/Icons/%s:0|t |cFFFFFF00Remove Filter|r"
+  local f = "|T%s:0|t |cFFFFFF00Remove Filter|r"
 
   tooltip:AddLine(string.format(f, icon))
   add_cell_link(tooltip, {
